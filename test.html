@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+	<script src="../../dist/jszip.js"></script>
+	<script src="../../dist/xlsx.js"></script>
+</head>
+<body>
+	<p><input type="file" name="xlfile" accept="application/vnd.ms-excel,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" id="xlf" />打开Excel文件</p>
+  <div id="array"></div>
+</body>
+<script>
+var X = XLSX
+var e = e || window.event
+var xlf = document.getElementById('xlf')
+function fixdata(data) {
+    var o = "", l = 0, w = 10240;
+    for(; l<data.byteLength/w; ++l) o+=String.fromCharCode.apply(null,new Uint8Array(data.slice(l*w,l*w+w)));
+    o+=String.fromCharCode.apply(null, new Uint8Array(data.slice(l*w)));
+    return o;
+}
+function handleFile(e) {
+  var files = e.target.files
+  var f = files[0]
+  {
+    var reader = new FileReader()
+    var name = f.name
+    reader.readAsArrayBuffer(f)
+    reader.onload = function(e) {
+      var data = e.target.result
+      var arr = fixdata(data)
+      var wb = X.read(btoa(arr), {type: 'base64'})
+      doSomeThing(wb.Sheets['选品'])
+    }
+  }
+}
+if(xlf.addEventListener) xlf.addEventListener('change', handleFile, false)
+var val = []
+var lastFlag = -1
+function doSomeThing (obj) {
+  Object.keys(obj).forEach(key => {
+    var _arr = []
+    if (key.indexOf('A') !== -1) {
+      var flag = obj[key].w.search('^[0-9]*$')
+      if (flag !== -1) {
+        val.push(obj[key].w)
+      } else if (lastFlag !== -1) {
+        val.push('/')
+      }
+      lastFlag = flag
+    }
+  })
+  show()
+}
+
+function show() {
+  if (val) {
+    var newArr = val.toString().split('/')
+    var _html = ''
+    for(var i=0,len=newArr.length;i<len;i++) {
+      newArr[i] = newArr[i].split(',')
+      for (var j=0,lenn=newArr[i].length;j<lenn;j++) {
+        if (newArr[i][j]) {
+          _html += "'"+newArr[i][j]+"',"
+        }
+      }
+      var pele = document.createElement('p')
+      var message = document.createTextNode(_html)
+      pele.appendChild(message)
+      document.getElementById('array').appendChild(message)
+      console.log(_html)
+      _html = ''
+    }
+  }
+}
+</script>
+</html>
